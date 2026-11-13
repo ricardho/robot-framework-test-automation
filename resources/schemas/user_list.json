@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:serverest:user_list",
+  "title": "User list (GET /usuarios)",
+  "type": "object",
+  "required": ["quantidade", "usuarios"],
+  "additionalProperties": false,
+  "properties": {
+    "quantidade": { "type": "integer", "minimum": 0 },
+    "usuarios": { "type": "array", "items": { "$ref": "urn:serverest:user" } }
+  }
+}

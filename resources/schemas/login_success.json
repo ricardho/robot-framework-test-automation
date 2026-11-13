@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:serverest:login_success",
+  "title": "Successful login (POST /login)",
+  "type": "object",
+  "required": ["message", "authorization"],
+  "additionalProperties": false,
+  "properties": {
+    "message": { "const": "Login realizado com sucesso" },
+    "authorization": { "type": "string", "pattern": "^Bearer [A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$" }
+  }
+}

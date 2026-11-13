@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:serverest:cart_list",
+  "title": "Cart list (GET /carrinhos)",
+  "type": "object",
+  "required": ["quantidade", "carrinhos"],
+  "additionalProperties": false,
+  "properties": {
+    "quantidade": { "type": "integer", "minimum": 0 },
+    "carrinhos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["produtos", "precoTotal", "quantidadeTotal", "idUsuario", "_id"],
+        "additionalProperties": false,
+        "properties": {
+          "produtos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["idProduto", "quantidade", "precoUnitario"],
+              "additionalProperties": false,
+              "properties": {
+                "idProduto": { "$ref": "urn:serverest:id" },
+                "quantidade": { "type": "integer", "minimum": 1 },
+                "precoUnitario": { "type": "integer", "exclusiveMinimum": 0 }
+              }
+            }
+          },
+          "precoTotal": { "type": "integer", "minimum": 0 },
+          "quantidadeTotal": { "type": "integer", "minimum": 0 },
+          "idUsuario": { "$ref": "urn:serverest:id" },
+          "_id": { "$ref": "urn:serverest:id" }
+        }
+      }
+    }
+  }
+}

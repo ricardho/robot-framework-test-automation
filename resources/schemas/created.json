@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:serverest:created",
+  "title": "Successful registration (POST /usuarios, /produtos, /carrinhos)",
+  "type": "object",
+  "required": ["message", "_id"],
+  "additionalProperties": false,
+  "properties": {
+    "message": { "const": "Cadastro realizado com sucesso" },
+    "_id": { "$ref": "urn:serverest:id" }
+  }
+}
