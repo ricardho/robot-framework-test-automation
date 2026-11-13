@@ -1,0 +1,43 @@
+[project]
+name = "robot-framework-test-automation"
+version = "0.1.0"
+description = "Robot Framework test automation for ServeRest: API, web, web mobile, hybrid and native Android tests."
+requires-python = ">=3.14"
+dependencies = [
+    "allure-robotframework>=2.16.2",
+    "fpdf2>=2.9.0",
+    "jsonschema>=4.26.0",
+    "python-dotenv>=1.2.4",
+    "robotframework>=7.5",
+    "robotframework-appiumlibrary>=3.2.1",
+    "robotframework-browser>=20.6.0",
+    "robotframework-faker>=6.0.0",
+    "robotframework-pabot>=5.2.2",
+    "robotframework-requests>=0.9.7",
+]
+
+[dependency-groups]
+dev = [
+    "robotframework-robocop>=9.1.2",
+]
+
+# Not a distributable package: uv only manages the virtual environment
+[tool.uv]
+package = false
+
+[tool.robocop.lint]
+configure = [
+    "line-too-long.line_length=140",
+    # Gherkin steps read as sentences ("Given a logged in customer"); Title Case is still accepted
+    "wrong-case-in-keyword-name.convention=first_word_capitalized",
+    "wrong-case-in-keyword-call.convention=first_word_capitalized",
+]
+ignore = [
+    # Test-scoped variables are how Given/When/Then steps share state inside one test
+    "VAR06",
+    # Robocop counts the VAR syntax (no "=") as an inconsistent assignment sign
+    "MISC04",
+]
+
+[tool.robocop.format]
+space_count = 4

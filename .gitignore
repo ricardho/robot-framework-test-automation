@@ -1,0 +1,36 @@
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local secrets (template: .env.example)
+.env
+
+# Robot Framework, Pabot, Browser Library outputs
+results/
+results-*/
+.robocop_cache/
+
+# App under test for native Android (downloaded by scripts/download_android_app.py)
+apps/
+output.xml
+log.html
+report.html
+pabot_results/
+.pabotsuitenames
+playwright-log.txt
+browser/
+
+# Allure
+allure-results/
+allure-report/
+
+# Evidence PDFs (default location is results/evidence, already ignored above)
+/evidence/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
