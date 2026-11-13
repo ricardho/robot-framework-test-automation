@@ -1,0 +1,239 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_android:
+        description: "Also run the native Android suite (emulator, ~15 min)"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 9 * * 1-5" # weekdays: catches changes in the public ServeRest and runs Android
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history
+      # CLI instead of gitleaks-action: the action scans only the pushed range and errors on a first push
+      - name: Install Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.21.2
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+      - name: Scan full git history for secrets
+        run: ./gitleaks git --redact --verbose --exit-code 1 .
+
+  lint:
+    name: Lint (Robocop)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Lint
+        run: uv run robocop check
+      - name: Format check
+        run: uv run robocop format --check --diff
+
+  tests:
+    name: API, web, web mobile and hybrid (Chromium)
+    needs: [secret-scan, lint]
+    runs-on: ubuntu-latest
+    env:
+      SERVEREST_ADMIN_PASSWORD: ${{ secrets.SERVEREST_ADMIN_PASSWORD }}
+      EVIDENCE_MODE: always
+      HEADLESS: "true"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - name: Install Browser Library dependencies and Chromium
+        run: uv run rfbrowser init --with-deps chromium
+      - name: Run suites in parallel (Pabot)
+        run: >
+          uv run pabot --processes 3 --testlevelsplit -A config/common.args
+          tests/api tests/web tests/web-mobile tests/hybrid
+      - name: Upload Robot and Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-main
+          path: |
+            results/allure-results
+            results/output.xml
+            results/log.html
+            results/report.html
+          retention-days: 14
+      - name: Upload PDF evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-pdf-main
+          path: results/evidence
+          if-no-files-found: ignore
+          retention-days: 30
+
+  cross-browser:
+    name: Web smoke (Firefox)
+    needs: [secret-scan, lint]
+    runs-on: ubuntu-latest
+    env:
+      BROWSER: firefox
+      HEADLESS: "true"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - name: Install Browser Library dependencies and Firefox
+        run: uv run rfbrowser init --with-deps firefox
+      - name: Web and hybrid smoke tests
+        run: >
+          uv run robot -A config/common.args --include smoke
+          --outputdir results-firefox tests/web tests/hybrid
+      - name: Upload Robot results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-firefox
+          path: |
+            results-firefox/log.html
+            results-firefox/report.html
+          retention-days: 14
+
+  android:
+    name: Native Android (emulator + Appium)
+    needs: [secret-scan, lint]
+    # Slow and resource hungry: only on schedule or when requested manually
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_android) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EVIDENCE_MODE: always
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - name: Download the app under test (Sauce Labs My Demo App)
+        run: uv run python scripts/download_android_app.py
+      - name: Install Appium and the UiAutomator2 driver
+        run: |
+          npm install --global appium
+          appium driver install uiautomator2
+      # Started in its own step: background processes launched inside the emulator
+      # runner's script end with that script line
+      - name: Start Appium server
+        run: |
+          mkdir -p results-android
+          nohup appium --log-level error --log results-android/appium.log > /dev/null 2>&1 &
+      - name: Enable KVM (hardware acceleration for the emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run native suite on an Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: uv run robot -A config/common.args --outputdir results-android tests/mobile
+      - name: Upload Robot and Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-android
+          path: |
+            results/allure-results
+            results-android
+          retention-days: 14
+      - name: Upload PDF evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-pdf-android
+          path: results/evidence
+          if-no-files-found: ignore
+          retention-days: 30
+
+  report:
+    name: Publish report (GitHub Pages)
+    needs: [tests, android]
+    # Publish even when tests fail (that is when the report matters), never when they did not run
+    if: ${{ !cancelled() && (needs.tests.result == 'success' || needs.tests.result == 'failure') && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: results-main
+          path: results-main
+      - name: Download Android results (when that job ran)
+        if: ${{ needs.android.result == 'success' || needs.android.result == 'failure' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: results-android
+          path: results-android
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Generate Allure report (all suites)
+        run: |
+          mkdir -p allure-results
+          cp -r results-main/allure-results/. allure-results/
+          if [ -d results-android/results/allure-results ]; then cp -r results-android/results/allure-results/. allure-results/; fi
+          npx --yes allure-commandline@2.32.0 generate allure-results --clean -o site
+      - name: Add Robot Framework log and report
+        run: |
+          mkdir -p site/robot
+          cp results-main/log.html results-main/report.html site/robot/
+          if [ -f results-android/results-android/log.html ]; then
+            mkdir -p site/robot/android
+            cp results-android/results-android/log.html results-android/results-android/report.html site/robot/android/
+          fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
