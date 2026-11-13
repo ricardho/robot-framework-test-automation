@@ -1,0 +1,39 @@
+# Versioned, NON-sensitive defaults. Secrets never go here: use .env locally
+# (see .env.example) and repository secrets in CI.
+#
+# Resolution order (first match wins):
+#   1. robot --variable NAME:value
+#   2. environment variable NAME
+#   3. local .env file (git-ignored)
+#   4. this file
+#   5. hard-coded default in libraries/config_resolver.py
+
+# ServeRest: public REST API + React front-end used as the system under test
+API_BASE_URL = "https://serverest.dev"
+BASE_URL = "https://front.serverest.dev"
+
+# Browser Library (Playwright): chromium | firefox | webkit
+BROWSER = "chromium"
+HEADLESS = "true"
+# The public front-end is sometimes slow to load: 15s keeps runs stable without hiding real waits
+TIMEOUT = "15s"
+
+# Device names come from Playwright's device descriptors
+MOBILE_DEVICE_IOS = "iPhone 14"
+MOBILE_DEVICE_ANDROID = "Pixel 7"
+
+# Native Android (Appium 2 + UiAutomator2) - Sauce Labs My Demo App.
+# The APK is downloaded by CI (scripts/download_android_app.py), never committed.
+APPIUM_URL = "http://127.0.0.1:4723"
+ANDROID_APP = "apps/mda-2.3.0-27.apk"
+ANDROID_APP_URL = "https://github.com/saucelabs/my-demo-app-android/releases/download/2.3.0/mda-2.3.0-27.apk"
+
+# Project-owned administrator account. Its password is a secret (SERVEREST_ADMIN_PASSWORD).
+# The public ServeRest is shared and reset from time to time, so the tests recreate this
+# account when it does not exist (resources/api/project_admin.resource).
+SERVEREST_ADMIN_EMAIL = "rf-automation.admin@example.com"
+
+# Evidence: failure | always | steps (one PDF per test in EVIDENCE_DIR)
+EVIDENCE_MODE = "failure"
+EVIDENCE_PDF = "true"
+EVIDENCE_DIR = "results/evidence"

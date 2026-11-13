@@ -1,0 +1,6 @@
+--pythonpath libraries
+--variablefile libraries/config_resolver.py
+--outputdir results
+--loglevel INFO
+--listener EvidenceListener
+--listener allure_robotframework:results/allure-results
