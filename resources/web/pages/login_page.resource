@@ -16,7 +16,7 @@ ${LOGIN_ALERTS}         css=.login-page .alert > span
 *** Keywords ***
 Open Login Page
     [Documentation]    Navigates to /login and waits for the form.
-    Go To    ${BASE_URL}/login
+    Go To    ${BASE_URL}/login    wait_until=${PAGE_LOAD_STATE}
     Wait For Elements State    ${LOGIN_FORM}    visible
 
 Log In As

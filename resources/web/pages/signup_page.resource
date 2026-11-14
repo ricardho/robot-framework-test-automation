@@ -17,7 +17,7 @@ ${SIGNUP_ALERTS}      css=.register-page .alert > span
 *** Keywords ***
 Open Sign Up Page
     [Documentation]    Navigates directly to the sign-up form.
-    Go To    ${BASE_URL}/cadastrarusuarios
+    Go To    ${BASE_URL}/cadastrarusuarios    wait_until=${PAGE_LOAD_STATE}
     Wait For Elements State    ${SIGNUP_FORM}    visible
 
 Sign Up

@@ -41,7 +41,7 @@ Start Session With Token
     [Documentation]    Logs in through the API and stores the token where the front-end expects it
     ...    (localStorage), skipping the login form. Opens the customer store or the admin home.
     [Arguments]    ${user}
-    Go To    ${BASE_URL}/login
+    Go To    ${BASE_URL}/login    wait_until=${PAGE_LOAD_STATE}
     VAR    &{storage}
     ...    serverest/userToken=${user}[token]
     ...    serverest/userEmail=${user}[email]
@@ -50,7 +50,7 @@ Start Session With Token
     ...    (storage) => Object.entries(storage).forEach(([key, value]) => localStorage.setItem(key, value))
     ...    arg=${storage}
     IF    $user['administrador'] == 'true'
-        Go To    ${BASE_URL}/admin/home
+        Go To    ${BASE_URL}/admin/home    wait_until=${PAGE_LOAD_STATE}
     ELSE
         Open Store
     END

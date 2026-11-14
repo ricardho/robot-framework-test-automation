@@ -13,6 +13,9 @@ Library          Browser
 
 *** Variables ***
 &{DESKTOP_VIEWPORT}    width=1920    height=1080
+# Navigation waits only for the DOM: the "load" event also waits for third-party assets and
+# timed out on a cold Firefox in CI. Page objects then wait for the elements they need.
+${PAGE_LOAD_STATE}     domcontentloaded
 
 
 *** Keywords ***
@@ -24,7 +27,7 @@ Open Desktop Page
     [Documentation]    Test Setup for desktop tests: fixed 1920x1080 viewport keeps screenshots stable.
     [Arguments]    ${path}=/login
     New Context    viewport=${DESKTOP_VIEWPORT}    locale=pt-BR
-    New Page    ${BASE_URL}${path}
+    New Page    ${BASE_URL}${path}    wait_until=${PAGE_LOAD_STATE}
 
 Open Mobile Page
     [Documentation]    Test Setup for web mobile tests, emulating a Playwright device
@@ -32,7 +35,7 @@ Open Mobile Page
     [Arguments]    ${device_name}    ${path}=/login
     ${device}=    Get Device    ${device_name}
     New Context    &{device}    locale=pt-BR
-    New Page    ${BASE_URL}${path}
+    New Page    ${BASE_URL}${path}    wait_until=${PAGE_LOAD_STATE}
 
 Close Test Context
     [Documentation]    Closes the context of the current test (its pages included).

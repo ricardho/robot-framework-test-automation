@@ -15,7 +15,7 @@ ${STORE_CARDS}            css=section .card
 *** Keywords ***
 Open Store
     [Documentation]    Navigates to /home (needs a logged-in session).
-    Go To    ${BASE_URL}/home
+    Go To    ${BASE_URL}/home    wait_until=${PAGE_LOAD_STATE}
     Wait For Elements State    ${STORE_SEARCH}    visible
 
 Search Product
