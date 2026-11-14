@@ -18,6 +18,7 @@ log.html
 report.html
 pabot_results/
 .pabotsuitenames
+pabot_manager.log
 playwright-log.txt
 browser/
 
