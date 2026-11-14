@@ -18,9 +18,12 @@ Create ServeRest API Session
     ...    some APIs reject the multi-value Accept that HTTP clients send by default.
     ...    The public ServeRest occasionally resets connections: retry with backoff on network
     ...    errors and gateway statuses (502/503/504) instead of failing the test.
+    ...    POST is left out on purpose: it is not idempotent, and resending a request the server
+    ...    already processed creates duplicates ("Este email já está sendo usado"). Connection
+    ...    errors raised before the request is sent are still retried for every method.
     VAR    &{headers}    Accept=application/json    Content-Type=application/json
     VAR    @{retry_statuses}    ${502}    ${503}    ${504}
-    VAR    @{retry_methods}    GET    POST    PUT    DELETE
+    VAR    @{retry_methods}    GET    PUT    DELETE
     Create Session    ${SESSION}    ${API_BASE_URL}    headers=${headers}    disable_warnings=${True}
     ...    max_retries=3    backoff_factor=0.5    retry_status_list=${retry_statuses}
     ...    retry_method_list=${retry_methods}

@@ -50,13 +50,42 @@ Delete User
 
 Register New User
     [Documentation]    Creates a user with fresh data and returns its payload plus ``_id``.
+    ...    Test-data helper with a safe retry: POST is not idempotent, so after a lost connection
+    ...    it first asks the API (GET by e-mail) whether the user was created before resending.
     [Arguments]    ${admin}=${False}
     ${user}=    New User Data    admin=${admin}
-    ${response}=    Create User    ${user}
+    FOR    ${_}    IN RANGE    3
+        ${user_id}=    Try To Create User    ${user}
+        IF    $user_id is not None
+            Set To Dictionary    ${user}    _id=${user_id}
+            RETURN    ${user}
+        END
+    END
+    Fail    Could not register test user: the connection was lost on every attempt
+
+Try To Create User
+    [Documentation]    One POST /usuarios. Returns the new ``_id``, or ``None`` when the connection
+    ...    was lost and the user was not created (safe to resend). Other errors fail the test.
+    [Arguments]    ${user}
+    TRY
+        ${response}=    Create User    ${user}
+    EXCEPT    ConnectionError: *    type=GLOB    AS    ${error}
+        Log    POST /usuarios lost the connection: ${error}    WARN
+        ${user_id}=    Find User Id By Email    ${user}[email]
+        IF    $user_id is not None    Track User For Cleanup    ${user_id}
+        RETURN    ${user_id}
+    END
     Should Be Equal As Integers    ${response.status_code}    201
     ...    msg=Could not register test user: ${response.text}
-    Set To Dictionary    ${user}    _id=${response.json()}[_id]
-    RETURN    ${user}
+    RETURN    ${response.json()}[_id]
+
+Find User Id By Email
+    [Documentation]    ``_id`` of the user with this e-mail, or ``None`` when it does not exist.
+    [Arguments]    ${email}
+    ${response}=    Search Users    email=${email}
+    VAR    ${users}    ${response.json()}[usuarios]
+    IF    $users    RETURN    ${users}[0][_id]
+    RETURN    ${None}
 
 Register And Login New User
     [Documentation]    Like ``Register New User`` and also adds the ``token`` key.
