@@ -1,5 +1,7 @@
 # Robot Framework Test Automation
 
+**English** | [Português (Brasil)](README.pt-BR.md)
+
 [![Tests](https://github.com/ricardho/robot-framework-test-automation/actions/workflows/tests.yml/badge.svg)](https://github.com/ricardho/robot-framework-test-automation/actions/workflows/tests.yml)
 [![Report](https://img.shields.io/badge/report-Allure-orange)](https://ricardho.github.io/robot-framework-test-automation/)
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
@@ -7,7 +9,7 @@
 ![Browser Library](https://img.shields.io/badge/Browser%20Library-Playwright-2ea44f)
 ![Appium](https://img.shields.io/badge/Appium-UiAutomator2-purple)
 
-Test automation framework in **Robot Framework** covering the four layers most QA jobs ask for:
+Test automation framework in **Robot Framework** covering the layers most QA jobs ask for:
 **REST API**, **web (desktop)**, **web mobile** (device emulation), **hybrid API + UI** and
 **native Android** (Appium), written as native Given/When/Then, run in parallel, with
 **per-test PDF evidence**, **Allure** report published to GitHub Pages and secrets kept out of git.
@@ -130,7 +132,9 @@ scripts/                 helper scripts (download of the Android app)
   does not open; store wider than the screen) are tests tagged `known-defect` +
   `robot:skip-on-failure`: they are reported as SKIP with the reason and turn green when fixed.
 - **Resilience without hiding failures.** The HTTP session retries network errors and 502/503/504
-  with backoff (the public server sometimes resets connections); assertions are never retried.
+  with backoff (the public server sometimes resets connections), except for `POST`, which is not
+  idempotent: test-data helpers recover a lost `POST` by looking the record up before resending, so
+  nothing is created twice. Assertions are never retried.
 - **Modern Robot Framework 7.** `VAR` syntax, `Secret` type for credentials, `TRY/FINALLY`,
   templates with embedded arguments, Robocop lint + format in CI.
 
